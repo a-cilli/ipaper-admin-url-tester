@@ -12,6 +12,7 @@ export default function Home() {
       brandedDomain: "",
       useBD: false,
       useBDRoot: false,
+      active: false,
     },
     {
       type: "folder",
@@ -20,6 +21,7 @@ export default function Home() {
       brandedDomain: "",
       useBD: false,
       useBDRoot: false,
+      active: false,
     },
     {
       type: "folder",
@@ -28,6 +30,7 @@ export default function Home() {
       brandedDomain: "",
       useBD: false,
       useBDRoot: false,
+      active: false,
     },
     {
       type: "flipbook",
@@ -36,6 +39,7 @@ export default function Home() {
       brandedDomain: "",
       useBD: false,
       useBDRoot: false,
+      active: false,
     },
     {
       type: "folder",
@@ -44,6 +48,7 @@ export default function Home() {
       brandedDomain: "",
       useBD: false,
       useBDRoot: false,
+      active: false,
     },
     {
       type: "folder",
@@ -52,6 +57,7 @@ export default function Home() {
       brandedDomain: "",
       useBD: false,
       useBDRoot: false,
+      active: false,
     },
     {
       type: "flipbook",
@@ -60,6 +66,7 @@ export default function Home() {
       brandedDomain: "",
       useBD: false,
       useBDRoot: false,
+      active: false,
     },
     {
       type: "folder",
@@ -68,6 +75,7 @@ export default function Home() {
       brandedDomain: "",
       useBD: false,
       useBDRoot: false,
+      active: false,
     },
     {
       type: "flipbook",
@@ -76,8 +84,11 @@ export default function Home() {
       brandedDomain: "",
       useBD: false,
       useBDRoot: false,
+      active: false,
     },
   ]);
+
+  const [showUrl, setShowUrl] = useState(true)
 
   // Function to handle input changes
   const handleInputChange = (index, field, newValue) => {
@@ -172,13 +183,13 @@ export default function Home() {
   const deleteElement = (index, level) => {
     // Clone the current data array
     const updatedData = [...data];
-  
+
     // Get the target object based on the index
     const targetObj = updatedData[index];
-  
+
     // Log the target object
     console.log("Target object to delete:", targetObj);
-  
+
     // Check if the target object is of type 'flipbook'
     if (targetObj.type === "flipbook") {
       // Remove the flipbook directly
@@ -186,11 +197,11 @@ export default function Home() {
     } else if (targetObj.type === "folder") {
       // If it's a folder, remove the folder and all its children
       let deleteCount = 1;
-  
+
       // Loop through subsequent items to identify children
       for (let i = index + 1; i < updatedData.length; i++) {
         const currentItem = updatedData[i];
-  
+
         // If the current item's level is greater than the target's level, it's a child
         if (currentItem.level > level) {
           deleteCount++;
@@ -199,16 +210,137 @@ export default function Home() {
           break;
         }
       }
-  
+
       // Remove the folder and all its children
       updatedData.splice(index, deleteCount);
     }
-  
+
     // Update the state with the modified data array
     setData(updatedData);
   };
-  
-  
+
+  // Handle focus to mark element as active
+  const handleFocus = (index) => {
+    const updatedData = data.map((item, i) =>
+      i === index ? { ...item, active: true } : item
+    );
+    setData(updatedData);
+  };
+
+  // Handle blur to mark element as inactive
+  const handleBlur = (index) => {
+    const updatedData = data.map((item, i) =>
+      i === index ? { ...item, active: false } : item
+    );
+    setData(updatedData);
+  };
+
+  const toggleUseBD = (index) => {
+    const updatedData = data.map((item, i) => {
+      if (i === index) {
+        const updatedUseBD = !item.useBD;
+        return {
+          ...item,
+          useBD: updatedUseBD,
+          brandedDomain: updatedUseBD ? item.brandedDomain : "",
+          useBDRoot: updatedUseBD ? item.useBDRoot : false,
+        };
+      }
+      return item;
+    });
+    setData(updatedData);
+  };
+
+  const toggleUseBDRoot = (index) => {
+    const updatedData = data.map((item, i) =>
+      i === index ? { ...item, useBDRoot: !item.useBDRoot } : item
+    );
+    setData(updatedData);
+  };
+
+  const addPreviousUrls = (index, currentLevel) => {
+    let urlSpans = [];
+    let foundBrandedDomain = false;
+    let level = currentLevel; // Initialize with the level passed
+
+    // Loop backwards from the provided index
+    for (let i = index - 1; i >= 0; i--) {
+      const currentObj = data[i];
+
+      // Skip if the element has a level equal to or greater than the current level
+      if (currentObj.level >= level) continue;
+
+      // Decrease level to match the parent hierarchy
+      level--;
+
+      // If we've found a branded domain, break the loop
+      if (foundBrandedDomain) break;
+
+      // If !useBDRoot, also add the sanitized name
+      if (!currentObj.useBDRoot && currentObj.useBD) {
+        let nameSpan = (
+          <span
+            className={`${
+              currentObj.type === "account"
+                ? "text-orange-600" :
+                currentObj.type === "folder"?
+                 "text-green-600"
+                : "text-blue-600"
+            }`}
+          >{`/${sanitizeUrl(currentObj.name)}`}</span>
+        );
+        urlSpans.unshift(nameSpan);
+      }
+
+      if (currentObj.useBD) {
+        // Create a branded domain span
+        let span = (
+          <span className="text-blue-600">
+            {`https://${sanitizeUrl(currentObj.brandedDomain)}`}
+          </span>
+        );
+        urlSpans.unshift(span);
+
+        foundBrandedDomain = true; // Branded domain found, no need to keep looping
+      } else if (currentObj.type === "account") {
+        // Special case for "account" type when loop reaches it
+        let accountSpan;
+        if (currentObj.useBD) {
+          accountSpan = (
+            <>
+              {`https://${sanitizeUrl(currentObj.brandedDomain)}`}
+              {!currentObj.useBDRoot && (
+                <span className="text-orange-600">{`/${sanitizeUrl(
+                  currentObj.name
+                )}`}</span>
+              )}
+            </>
+          );
+        } else {
+          accountSpan = (
+            <>
+              {"https://viewer.ipaper.io/"}
+              <span className="text-orange-600">
+                {sanitizeUrl(currentObj.name)}
+              </span>
+            </>
+          );
+        }
+        urlSpans.unshift(accountSpan);
+        break; // End loop after processing account
+      } else {
+        // For non-branded items, use green sanitized name span
+        let nameSpan = (
+          <span className="text-green-600">{`/${sanitizeUrl(
+            currentObj.name
+          )}`}</span>
+        );
+        urlSpans.unshift(nameSpan);
+      }
+    }
+
+    return urlSpans;
+  };
 
   const getInputWidth = (value) => {
     // Calculate width based on character length (4px per character)
@@ -219,11 +351,24 @@ export default function Home() {
     // Trim any leading or trailing whitespace
     let sanitizedText = text.trim();
     // Replace spaces with hyphens
-    sanitizedText = sanitizedText.replace(/\s+/g, '-');
+    sanitizedText = sanitizedText.replace(/\s+/g, "-");
     // Convert the text to lowercase
     sanitizedText = sanitizedText.toLowerCase();
     return sanitizedText;
   }
+
+  const clearData = ()=>{
+    setData([{
+      type: "account",
+      name: "account name",
+      level: 0,
+      brandedDomain: "",
+      useBD: false,
+      useBDRoot: false,
+      active: false,
+    }])
+  }
+
 
   return (
     <div className="grid grid-cols-[100px_1fr] min-w-screen min-h-screen">
@@ -253,11 +398,15 @@ export default function Home() {
             </p>
           </div>
           <div className="flex flex-row">
-            <button className="inline-block align-middle mt-1.5 mb-1.5 px-6 py-1.5 border border-[#F0F1F2] rounded-sm bg-white text-[#303940] text-center font-normal text-base leading-6 cursor-pointer select-none">
-              Create Folder
+            <button className="inline-block align-middle mt-1.5 mb-1.5 px-6 py-1.5 border border-[#F0F1F2] rounded-sm bg-white text-[#303940] text-center font-normal text-base leading-6 cursor-pointer select-none"
+              onClick={()=>clearData()}
+            >
+              Clear Panel
             </button>
-            <button className="inline-block align-middle mt-1.5 mb-1.5 ml-2 px-6 py-1.5 border border-[#091722] rounded-sm bg-[#091722] text-white text-center font-normal text-base leading-6 cursor-pointer select-none transition-all duration-100 ease-in-out">
-              Create Flipbook
+            <button className="inline-block align-middle mt-1.5 mb-1.5 ml-2 px-6 py-1.5 border border-[#091722] rounded-sm bg-[#091722] text-white text-center font-normal text-base leading-6 cursor-pointer select-none transition-all duration-100 ease-in-out"
+            onClick={()=>setShowUrl(!showUrl)}
+            >
+              {showUrl ? "Hide URLs" : "Show URLs"}
             </button>
           </div>
         </div>
@@ -271,7 +420,9 @@ export default function Home() {
           {data.map((obj, index) => (
             <div
               key={index}
-              className="w-full hover:bg-[#D6ECF8] flex justify-end items-end py-2 px-5 group"
+              className={`w-full ${
+                obj.active && "bg-[#D6ECF8]"
+              } hover:bg-[#D6ECF8] flex justify-end items-end py-2 px-5 group`}
             >
               <div
                 className="flex items-center"
@@ -325,29 +476,146 @@ export default function Home() {
                       : "font-light text-[#303940]"
                   }  text-sm`}
                   value={obj.name}
-                  onChange={(e) => handleInputChange(index, "name", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange(index, "name", e.target.value)
+                  }
+                  onFocus={() => handleFocus(index)}
+                  onBlur={() => handleBlur(index)}
                   style={{ width: getInputWidth(obj.name) }}
                 />
-                <p>
-                index:{index} - level:{obj.level}
-              </p>
+                <div className={`${showUrl ? "flex" : "hidden"}`}>
+                  {obj.type === "account" ? (
+                    <p className="text-blue-600 text-xs">
+                      {obj.useBD ? (
+                        <>
+                          {`https://${sanitizeUrl(obj.brandedDomain)}`}
+                          {!obj.useBDRoot && (
+                            <span className="text-orange-600">{`/${sanitizeUrl(
+                              obj.name
+                            )}`}</span>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {"https://viewer.ipaper.io/"}
+                          <span className="text-orange-600">
+                            {sanitizeUrl(obj.name)}
+                          </span>
+                        </>
+                      )}
+                    </p>
+                  ) : (
+                    <p className="text-blue-600 text-xs">
+                      {obj.useBD ? (
+                        <>
+                          {`https://${sanitizeUrl(obj.brandedDomain)}`}
+                          {!obj.useBDRoot && (
+                            <span
+                              className={`${
+                                obj.type === "folder"
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
+                            >{`/${sanitizeUrl(obj.name)}`}</span>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {addPreviousUrls(index, obj.level)}
+                          <span
+                            className={`${
+                              obj.type === "folder"
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                          >
+                            /{sanitizeUrl(obj.name)}
+                          </span>
+                        </>
+                      )}
+                    </p>
+                  )}
+                </div>
               </div>
               <div className="flex gap-2 ml-auto">
-
-
-              <input
+                <label
+                  className={`${obj.active && obj.useBD ? "flex" : "hidden"} ${
+                    obj.useBD && "group-hover:flex"
+                  } cursor-pointer`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={obj.useBDRoot}
+                    onChange={() => toggleUseBDRoot(index)}
+                    className="hidden"
+                  />
+                  <p>Enable Domain Root</p>
+                  <Image
+                    alt="Folder icon"
+                    src={
+                      obj.useBDRoot
+                        ? "/media/checkbox-checked.svg"
+                        : "/media/checkbox.svg"
+                    }
+                    className="ml-1"
+                    width={15}
+                    height={15}
+                    style={{
+                      filter:
+                        "invert(19%) sepia(3%) saturate(2638%) hue-rotate(164deg) brightness(103%) contrast(92%)",
+                    }}
+                  />
+                </label>
+                <input
                   type="text"
-                  className={`hidden group-hover:inline-block bg-transparent border-2 border-black min-w-4 font-bold text-sm`}
+                  className={`${
+                    obj.active && obj.useBD ? "inline-block" : "hidden"
+                  } ${
+                    obj.useBD && "group-hover:inline-block"
+                  } min-w-48 bg-transparent border-2 border-black  font-bold text-sm`}
                   value={obj.brandedDomain}
-                  onChange={(e) => handleInputChange(index, "brandedDomain", e.target.value)}
+                  placeholder="Add Branded domain URL"
+                  onChange={(e) =>
+                    handleInputChange(index, "brandedDomain", e.target.value)
+                  }
+                  onFocus={() => handleFocus(index)}
+                  onBlur={() => handleBlur(index)}
                   style={{ width: getInputWidth(obj.brandedDomain) }}
                 />
-
-
+                <label
+                  className={`${
+                    obj.active ? "flex" : "hidden"
+                  } group-hover:flex cursor-pointer`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={obj.useBD}
+                    onChange={() => toggleUseBD(index)}
+                    className="hidden"
+                  />
+                  <p>Use branded domain</p>
+                  <Image
+                    alt="Folder icon"
+                    src={
+                      obj.useBD
+                        ? "/media/checkbox-checked.svg"
+                        : "/media/checkbox.svg"
+                    }
+                    className="ml-1"
+                    width={15}
+                    height={15}
+                    style={{
+                      filter:
+                        "invert(19%) sepia(3%) saturate(2638%) hue-rotate(164deg) brightness(103%) contrast(92%)",
+                    }}
+                  />
+                </label>
                 {obj.type !== "flipbook" && (
                   <>
                     <button
-                      className="border-none bg-transparent justify-end items-center p-0 m-0 hidden group-hover:flex"
+                      className={`border-none bg-transparent justify-end items-center p-0 m-0 ${
+                        obj.active ? "flex" : "hidden"
+                      } group-hover:flex`}
                       onClick={() => createFolder(index, obj.level)}
                     >
                       <Image
@@ -362,7 +630,9 @@ export default function Home() {
                       />
                     </button>
                     <button
-                      className="border-none bg-transparent justify-end items-center p-0 m-0 hidden group-hover:flex"
+                      className={`border-none bg-transparent justify-end items-center p-0 m-0 ${
+                        obj.active ? "flex" : "hidden"
+                      } group-hover:flex`}
                       onClick={() => createFlipbook(index, obj.level)}
                     >
                       <Image
@@ -380,7 +650,9 @@ export default function Home() {
                 )}
                 {obj.type !== "account" && (
                   <button
-                    className="border-none bg-transparent justify-end items-center p-0 m-0 hidden group-hover:flex"
+                    className={`border-none bg-transparent justify-end items-center p-0 m-0 ${
+                      obj.active ? "flex" : "hidden"
+                    } group-hover:flex`}
                     onClick={() => {
                       deleteElement(index, obj.level);
                     }}
