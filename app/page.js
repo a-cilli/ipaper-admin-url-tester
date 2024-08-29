@@ -1,113 +1,408 @@
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
 
 export default function Home() {
+  const [data, setData] = useState([
+    {
+      type: "account",
+      name: "account name",
+      level: 0,
+      brandedDomain: "",
+      useBD: false,
+      useBDRoot: false,
+    },
+    {
+      type: "folder",
+      name: "folder 1",
+      level: 1,
+      brandedDomain: "",
+      useBD: false,
+      useBDRoot: false,
+    },
+    {
+      type: "folder",
+      name: "folder 2",
+      level: 2,
+      brandedDomain: "",
+      useBD: false,
+      useBDRoot: false,
+    },
+    {
+      type: "flipbook",
+      name: "flipbook 1",
+      level: 3,
+      brandedDomain: "",
+      useBD: false,
+      useBDRoot: false,
+    },
+    {
+      type: "folder",
+      name: "folder 3",
+      level: 2,
+      brandedDomain: "",
+      useBD: false,
+      useBDRoot: false,
+    },
+    {
+      type: "folder",
+      name: "folder 4",
+      level: 3,
+      brandedDomain: "",
+      useBD: false,
+      useBDRoot: false,
+    },
+    {
+      type: "flipbook",
+      name: "flipbook 2",
+      level: 4,
+      brandedDomain: "",
+      useBD: false,
+      useBDRoot: false,
+    },
+    {
+      type: "folder",
+      name: "folder 5",
+      level: 1,
+      brandedDomain: "",
+      useBD: false,
+      useBDRoot: false,
+    },
+    {
+      type: "flipbook",
+      name: "flipbook 3",
+      level: 2,
+      brandedDomain: "",
+      useBD: false,
+      useBDRoot: false,
+    },
+  ]);
+
+  // Function to handle input changes
+  const handleInputChange = (index, field, newValue) => {
+    // Create a new array with updated data
+    const updatedData = data.map((item, i) =>
+      i === index ? { ...item, [field]: newValue } : item
+    );
+    // Update the state
+    setData(updatedData);
+  };
+
+  const createFolder = (index, level) => {
+    // Create a new folder object
+    const newFolder = {
+      type: "folder",
+      name: "new folder",
+      level: level + 1,
+      brandedDomain: "",
+      useBD: false,
+      useBDRoot: false,
+    };
+
+    // Clone the current data array
+    const updatedData = [...data];
+
+    // Define the new index for insertion
+    let insertionIndex = index + 1;
+
+    // Find the insertion point
+    while (insertionIndex < updatedData.length) {
+      const currentItem = updatedData[insertionIndex];
+
+      // If we encounter an item at the same level, check type
+      if (currentItem.level === level + 1) {
+        // Insert the new folder before any flipbook
+        if (currentItem.type === "flipbook") {
+          break;
+        }
+      } else if (currentItem.level <= level) {
+        // Break loop if level goes back to the current level or higher
+        break;
+      }
+
+      insertionIndex++;
+    }
+
+    // Insert the new folder
+    updatedData.splice(insertionIndex, 0, newFolder);
+
+    // Update the state
+    setData(updatedData);
+  };
+
+  const createFlipbook = (index, level) => {
+    // Create a new flipbook object
+    const newFlipbook = {
+      type: "flipbook",
+      name: "new flipbook",
+      level: level + 1,
+      brandedDomain: "",
+      useBD: false,
+      useBDRoot: false,
+    };
+
+    // Clone the current data array
+    const updatedData = [...data];
+
+    // Define the new index for insertion
+    let insertionIndex = index + 1;
+
+    // Loop through the array starting from the index
+    while (insertionIndex < updatedData.length) {
+      const currentItem = updatedData[insertionIndex];
+
+      // Check if the current item’s level is less than or equal to the level of the new flipbook
+      if (currentItem.level <= level) {
+        // Stop the loop if we encounter an item with a level less than or equal to the new flipbook's level
+        break;
+      }
+
+      // Move to the next item
+      insertionIndex++;
+    }
+
+    // Insert the new flipbook at the calculated index
+    updatedData.splice(insertionIndex, 0, newFlipbook);
+
+    // Update the state
+    setData(updatedData);
+  };
+
+  const deleteElement = (index, level) => {
+    // Clone the current data array
+    const updatedData = [...data];
+  
+    // Get the target object based on the index
+    const targetObj = updatedData[index];
+  
+    // Log the target object
+    console.log("Target object to delete:", targetObj);
+  
+    // Check if the target object is of type 'flipbook'
+    if (targetObj.type === "flipbook") {
+      // Remove the flipbook directly
+      updatedData.splice(index, 1);
+    } else if (targetObj.type === "folder") {
+      // If it's a folder, remove the folder and all its children
+      let deleteCount = 1;
+  
+      // Loop through subsequent items to identify children
+      for (let i = index + 1; i < updatedData.length; i++) {
+        const currentItem = updatedData[i];
+  
+        // If the current item's level is greater than the target's level, it's a child
+        if (currentItem.level > level) {
+          deleteCount++;
+        } else {
+          // If we encounter an item that is not a child, stop counting
+          break;
+        }
+      }
+  
+      // Remove the folder and all its children
+      updatedData.splice(index, deleteCount);
+    }
+  
+    // Update the state with the modified data array
+    setData(updatedData);
+  };
+  
+  
+
+  const getInputWidth = (value) => {
+    // Calculate width based on character length (4px per character)
+    return `${value.length * 10 + 20}px`;
+  };
+
+  function sanitizeUrl(text) {
+    // Trim any leading or trailing whitespace
+    let sanitizedText = text.trim();
+    // Replace spaces with hyphens
+    sanitizedText = sanitizedText.replace(/\s+/g, '-');
+    // Convert the text to lowercase
+    sanitizedText = sanitizedText.toLowerCase();
+    return sanitizedText;
+  }
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.js</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
+    <div className="grid grid-cols-[100px_1fr] min-w-screen min-h-screen">
+      <div className="col-start-1 col-end-2 row-start-1 row-end-3 bg-[#081722]"></div>
+      <div
+        className="fixed right-0 top-0 h-[60px] w-[calc(100vw-100px)] bg-white"
+        style={{
+          boxShadow:
+            "0 1px 2px 0 rgba(0, 0, 0, 0.2), 0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+        }}
+      ></div>
+      <main className="col-start-2 col-end-3 pt-20 row-start-2 row-end-3 bg-[#F0F1F2] min-w-[calc(100vw-100px)] min-h-screen flex flex-col items-center justify-start py-10 px-6">
+        <div className="bg-green flex justify-between w-full">
+          <div className="flex items-center">
             <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
+              alt="Flipbook icon"
+              src={"/media/flipbook.svg"}
+              className="mb-1"
+              width={25}
+              height={25}
             />
-          </a>
+            <h1 className="text-[#303940] text-2xl font-bold mx-2">
+              Flipbooks
+            </h1>
+            <p className="opacity-75 text-xs font-normal  mt-[6px]">
+              1 of 1000 flipbooks
+            </p>
+          </div>
+          <div className="flex flex-row">
+            <button className="inline-block align-middle mt-1.5 mb-1.5 px-6 py-1.5 border border-[#F0F1F2] rounded-sm bg-white text-[#303940] text-center font-normal text-base leading-6 cursor-pointer select-none">
+              Create Folder
+            </button>
+            <button className="inline-block align-middle mt-1.5 mb-1.5 ml-2 px-6 py-1.5 border border-[#091722] rounded-sm bg-[#091722] text-white text-center font-normal text-base leading-6 cursor-pointer select-none transition-all duration-100 ease-in-out">
+              Create Flipbook
+            </button>
+          </div>
         </div>
-      </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-full sm:before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full sm:after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
+        <div
+          className="w-full min-h-40 border border-[#F0F1F2] bg-white shadow-md"
+          style={{
+            boxShadow:
+              "0 1px 2px 0 rgba(0, 0, 0, 0.2), 0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+          }}
         >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
+          {data.map((obj, index) => (
+            <div
+              key={index}
+              className="w-full hover:bg-[#D6ECF8] flex justify-end items-end py-2 px-5 group"
+            >
+              <div
+                className="flex items-center"
+                style={{ marginLeft: `${obj.level * 24}px` }}
+              >
+                {obj.type === "folder" && (
+                  <>
+                    <Image
+                      alt="arrow icon"
+                      src={"/media/arrow.svg"}
+                      width={20}
+                      height={20}
+                      style={{
+                        filter:
+                          "invert(48%) sepia(9%) saturate(238%) hue-rotate(164deg) brightness(95%) contrast(84%)",
+                      }}
+                    />
+                    <Image
+                      alt="Folder icon"
+                      src={"/media/folder.svg"}
+                      className="mr-1"
+                      width={25}
+                      height={25}
+                      style={{
+                        filter:
+                          "invert(19%) sepia(3%) saturate(2638%) hue-rotate(164deg) brightness(103%) contrast(92%)",
+                      }}
+                    />
+                  </>
+                )}
+                {obj.type === "flipbook" && (
+                  <>
+                    <Image
+                      alt="flipbook icon"
+                      src={"/media/flipbook.svg"}
+                      className="ml-4 mr-1"
+                      width={25}
+                      height={25}
+                      style={{
+                        filter:
+                          "invert(19%) sepia(3%) saturate(2638%) hue-rotate(164deg) brightness(103%) contrast(92%)",
+                      }}
+                    />
+                  </>
+                )}
+                <input
+                  type="text"
+                  className={`bg-transparent border-0 min-w-4 ${
+                    obj.type === "account"
+                      ? "font-bold"
+                      : "font-light text-[#303940]"
+                  }  text-sm`}
+                  value={obj.name}
+                  onChange={(e) => handleInputChange(index, "name", e.target.value)}
+                  style={{ width: getInputWidth(obj.name) }}
+                />
+                <p>
+                index:{index} - level:{obj.level}
+              </p>
+              </div>
+              <div className="flex gap-2 ml-auto">
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800 hover:dark:bg-opacity-30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore starter templates for Next.js.
-          </p>
-        </a>
+              <input
+                  type="text"
+                  className={`hidden group-hover:inline-block bg-transparent border-2 border-black min-w-4 font-bold text-sm`}
+                  value={obj.brandedDomain}
+                  onChange={(e) => handleInputChange(index, "brandedDomain", e.target.value)}
+                  style={{ width: getInputWidth(obj.brandedDomain) }}
+                />
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-balance`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+
+                {obj.type !== "flipbook" && (
+                  <>
+                    <button
+                      className="border-none bg-transparent justify-end items-center p-0 m-0 hidden group-hover:flex"
+                      onClick={() => createFolder(index, obj.level)}
+                    >
+                      <Image
+                        alt="create folder icon"
+                        src={"/media/new-folder.svg"}
+                        width={25}
+                        height={25}
+                        style={{
+                          filter:
+                            "invert(19%) sepia(3%) saturate(2638%) hue-rotate(164deg) brightness(103%) contrast(92%)",
+                        }}
+                      />
+                    </button>
+                    <button
+                      className="border-none bg-transparent justify-end items-center p-0 m-0 hidden group-hover:flex"
+                      onClick={() => createFlipbook(index, obj.level)}
+                    >
+                      <Image
+                        alt="create folder icon"
+                        src={"/media/new-flipbook.svg"}
+                        width={25}
+                        height={25}
+                        style={{
+                          filter:
+                            "invert(19%) sepia(3%) saturate(2638%) hue-rotate(164deg) brightness(103%) contrast(92%)",
+                        }}
+                      />
+                    </button>
+                  </>
+                )}
+                {obj.type !== "account" && (
+                  <button
+                    className="border-none bg-transparent justify-end items-center p-0 m-0 hidden group-hover:flex"
+                    onClick={() => {
+                      deleteElement(index, obj.level);
+                    }}
+                  >
+                    <Image
+                      alt="create folder icon"
+                      src={"/media/trash.svg"}
+                      width={25}
+                      height={25}
+                      style={{
+                        filter:
+                          "invert(19%) sepia(3%) saturate(2638%) hue-rotate(164deg) brightness(103%) contrast(92%)",
+                      }}
+                    />
+                  </button>
+                )}
+                <p className="font-extrabold ml-4">...</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </main>
+    </div>
   );
 }
