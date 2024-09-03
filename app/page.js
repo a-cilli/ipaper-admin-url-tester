@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import React, { Fragment } from "react";
 
 export default function Home() {
   const [data, setData] = useState([
@@ -12,83 +13,59 @@ export default function Home() {
       brandedDomain: "",
       useBD: false,
       useBDRoot: false,
-      active: false,
-    },
-    {
-      type: "folder",
-      name: "folder 1",
-      level: 1,
-      brandedDomain: "",
-      useBD: false,
-      useBDRoot: false,
-      active: false,
-    },
-    {
-      type: "folder",
-      name: "folder 2",
-      level: 2,
-      brandedDomain: "",
-      useBD: false,
-      useBDRoot: false,
-      active: false,
-    },
-    {
-      type: "flipbook",
-      name: "flipbook 1",
-      level: 3,
-      brandedDomain: "",
-      useBD: false,
-      useBDRoot: false,
-      active: false,
-    },
-    {
-      type: "folder",
-      name: "folder 3",
-      level: 2,
-      brandedDomain: "",
-      useBD: false,
-      useBDRoot: false,
-      active: false,
-    },
-    {
-      type: "folder",
-      name: "folder 4",
-      level: 3,
-      brandedDomain: "",
-      useBD: false,
-      useBDRoot: false,
-      active: false,
-    },
-    {
-      type: "flipbook",
-      name: "flipbook 2",
-      level: 4,
-      brandedDomain: "",
-      useBD: false,
-      useBDRoot: false,
-      active: false,
-    },
-    {
-      type: "folder",
-      name: "folder 5",
-      level: 1,
-      brandedDomain: "",
-      useBD: false,
-      useBDRoot: false,
-      active: false,
-    },
-    {
-      type: "flipbook",
-      name: "flipbook 3",
-      level: 2,
-      brandedDomain: "",
-      useBD: false,
-      useBDRoot: false,
-      active: false,
+      open: true,
     },
   ]);
 
-  const [showUrl, setShowUrl] = useState(true)
+  const [activeObj, setActiveObj] = useState(null);
+
+  const [showUrl, setShowUrl] = useState(true);
+
+  const [flipbookAmmont, setFlipbookAmmount] = useState(0);
+
+  useEffect(() => {
+    // Count the number of flipbook objects in the data array
+    const count = data.filter((item) => item.type === "flipbook").length;
+
+    // Update the flipbookAmmount state with the count
+    setFlipbookAmmount(count);
+  }, [data]);
+
+  const handleToggleOpen = (index) => {
+    setActiveObj(null)
+    // Clone the current data array
+    const updatedData = [...data];
+
+    // Toggle the 'open' property of the selected item
+    updatedData[index] = {
+      ...updatedData[index],
+      open: !updatedData[index].open,
+    };
+
+    // Update the state with the modified data array
+    setData(updatedData);
+  };
+
+  const checkedOpen = (index, level) => {
+    let currentLevel = level; // Initialize with the level passed
+
+    for (let i = index - 1; i >= 0; i--) {
+      const currentObj = data[i];
+
+      // Check if the currentObj is a direct parent
+      if (currentObj.level === currentLevel - 1) {
+        // If parent is closed, hide this element
+        if (!currentObj.open) {
+          return "hidden";
+        }
+        // Update the level for the next iteration
+        currentLevel--;
+      }
+    }
+
+    // If no ancestor with open === false is found
+    return "flex";
+  };
 
   // Function to handle input changes
   const handleInputChange = (index, field, newValue) => {
@@ -109,6 +86,7 @@ export default function Home() {
       brandedDomain: "",
       useBD: false,
       useBDRoot: false,
+      open: true,
     };
 
     // Clone the current data array
@@ -213,25 +191,10 @@ export default function Home() {
 
       // Remove the folder and all its children
       updatedData.splice(index, deleteCount);
+      setActiveObj(null);
     }
 
     // Update the state with the modified data array
-    setData(updatedData);
-  };
-
-  // Handle focus to mark element as active
-  const handleFocus = (index) => {
-    const updatedData = data.map((item, i) =>
-      i === index ? { ...item, active: true } : item
-    );
-    setData(updatedData);
-  };
-
-  // Handle blur to mark element as inactive
-  const handleBlur = (index) => {
-    const updatedData = data.map((item, i) =>
-      i === index ? { ...item, active: false } : item
-    );
     setData(updatedData);
   };
 
@@ -259,88 +222,105 @@ export default function Home() {
   };
 
   const addPreviousUrls = (index, currentLevel) => {
-    let urlSpans = [];
-    let foundBrandedDomain = false;
-    let level = currentLevel; // Initialize with the level passed
+  let urlSpans = [];
+  let foundBrandedDomain = false;
+  let level = currentLevel; // Initialize with the level passed
 
-    // Loop backwards from the provided index
-    for (let i = index - 1; i >= 0; i--) {
-      const currentObj = data[i];
+  // Loop backwards from the provided index
+  for (let i = index - 1; i >= 0; i--) {
+    const currentObj = data[i];
 
-      // Skip if the element has a level equal to or greater than the current level
-      if (currentObj.level >= level) continue;
+    // Skip if the element has a level equal to or greater than the current level
+    if (currentObj.level >= level) continue;
 
-      // Decrease level to match the parent hierarchy
-      level--;
+    // Decrease level to match the parent hierarchy
+    level--;
 
-      // If we've found a branded domain, break the loop
-      if (foundBrandedDomain) break;
+    // If we've found a branded domain, break the loop
+    if (foundBrandedDomain) break;
 
-      // If !useBDRoot, also add the sanitized name
-      if (!currentObj.useBDRoot && currentObj.useBD) {
-        let nameSpan = (
-          <span
-            className={`${
-              currentObj.type === "account"
-                ? "text-orange-600" :
-                currentObj.type === "folder"?
-                 "text-green-600"
-                : "text-blue-600"
-            }`}
-          >{`/${sanitizeUrl(currentObj.name)}`}</span>
-        );
-        urlSpans.unshift(nameSpan);
-      }
-
-      if (currentObj.useBD) {
-        // Create a branded domain span
-        let span = (
-          <span className="text-blue-600">
-            {`https://${sanitizeUrl(currentObj.brandedDomain)}`}
-          </span>
-        );
-        urlSpans.unshift(span);
-
-        foundBrandedDomain = true; // Branded domain found, no need to keep looping
-      } else if (currentObj.type === "account") {
-        // Special case for "account" type when loop reaches it
-        let accountSpan;
-        if (currentObj.useBD) {
-          accountSpan = (
-            <>
-              {`https://${sanitizeUrl(currentObj.brandedDomain)}`}
-              {!currentObj.useBDRoot && (
-                <span className="text-orange-600">{`/${sanitizeUrl(
-                  currentObj.name
-                )}`}</span>
-              )}
-            </>
-          );
-        } else {
-          accountSpan = (
-            <>
-              {"https://viewer.ipaper.io/"}
-              <span className="text-orange-600">
-                {sanitizeUrl(currentObj.name)}
-              </span>
-            </>
-          );
-        }
-        urlSpans.unshift(accountSpan);
-        break; // End loop after processing account
-      } else {
-        // For non-branded items, use green sanitized name span
-        let nameSpan = (
-          <span className="text-green-600">{`/${sanitizeUrl(
-            currentObj.name
-          )}`}</span>
-        );
-        urlSpans.unshift(nameSpan);
-      }
+    // If !useBDRoot, also add the sanitized name
+    if (!currentObj.useBDRoot && currentObj.useBD) {
+      let nameSpan = (
+        <span
+          key={`name-${i}-${currentObj.id}`} // Ensure unique key
+          className={`${
+            currentObj.type === "account"
+              ? "text-orange-600"
+              : currentObj.type === "folder"
+              ? "text-green-600"
+              : "text-blue-600"
+          }`}
+        >
+          {`/${sanitizeUrl(currentObj.name)}`}
+        </span>
+      );
+      urlSpans.unshift(nameSpan);
     }
 
-    return urlSpans;
-  };
+    if (currentObj.useBD) {
+      // Create a branded domain span
+      let span = (
+        <span key={`branded-${i}-${currentObj.id}`} className="text-blue-600">
+          {`https://${sanitizeUrl(currentObj.brandedDomain)}`}
+        </span>
+      );
+      urlSpans.unshift(span);
+
+      foundBrandedDomain = true; // Branded domain found, no need to keep looping
+    } else if (currentObj.type === "account") {
+      // Special case for "account" type when loop reaches it
+      let accountSpan;
+      if (currentObj.useBD) {
+        accountSpan = (
+          <React.Fragment key={`fragment-${Math.random()}`}>
+            <span key={`account-branded-${i}-${currentObj.id}`}>
+              {`https://${sanitizeUrl(currentObj.brandedDomain)}`}
+            </span>
+            {!currentObj.useBDRoot && (
+              <span
+                key={`account-name-${i}-${currentObj.id}`}
+                className="text-orange-600"
+              >
+                {`/${sanitizeUrl(currentObj.name)}`}
+              </span>
+            )}
+          </React.Fragment>
+        );
+      } else {
+        accountSpan = (
+          <React.Fragment key={`fragment-${Math.random()}`}>
+            <span key={`account-viewer-${i}-${currentObj.id}`}>
+              {"https://viewer.ipaper.io/"}
+            </span>
+            <span
+              key={`account-name-${i}-${currentObj.id}`}
+              className="text-orange-600"
+            >
+              {sanitizeUrl(currentObj.name)}
+            </span>
+          </React.Fragment>
+        );
+      }
+      urlSpans.unshift(accountSpan);
+      break; // End loop after processing account
+    } else {
+      // For non-branded items, use green sanitized name span
+      let nameSpan = (
+        <span
+          key={`non-branded-${i}-${currentObj.id}`}
+          className="text-green-600"
+        >
+          {`/${sanitizeUrl(currentObj.name)}`}
+        </span>
+      );
+      urlSpans.unshift(nameSpan);
+    }
+  }
+
+  return urlSpans;
+};
+
 
   const getInputWidth = (value) => {
     // Calculate width based on character length (4px per character)
@@ -357,30 +337,61 @@ export default function Home() {
     return sanitizedText;
   }
 
-  const clearData = ()=>{
-    setData([{
-      type: "account",
-      name: "account name",
-      level: 0,
-      brandedDomain: "",
-      useBD: false,
-      useBDRoot: false,
-      active: false,
-    }])
-  }
+  const clearData = () => {
+    setData([
+      {
+        type: "account",
+        name: "account name",
+        level: 0,
+        brandedDomain: "",
+        useBD: false,
+        useBDRoot: false,
+        active: false,
+      },
+    ]);
+  };
 
+  const toggleActiveElement = (index) => {
+    if (index === activeObj) {
+      setActiveObj(null);
+    } else {
+      setActiveObj(index);
+    }
+  };
 
   return (
     <div className="grid grid-cols-[100px_1fr] min-w-screen min-h-screen">
-      <div className="col-start-1 col-end-2 row-start-1 row-end-3 bg-[#081722]"></div>
+      <div className="col-start-1 col-end-2 row-start-1 row-end-3 bg-[#081722] flex justify-start items-start">
+        <Image
+          src={"/media/sidebar-btn.png"}
+          alt="sidebar buttons"
+  
+          width={100}
+          height={443}
+        />
+      </div>
       <div
-        className="fixed right-0 top-0 h-[60px] w-[calc(100vw-100px)] bg-white"
+        className="fixed right-0 top-0 h-[60px] w-[calc(100vw-100px)] bg-white flex justify-end"
         style={{
           boxShadow:
             "0 1px 2px 0 rgba(0, 0, 0, 0.2), 0 1px 3px 0 rgba(0, 0, 0, 0.1)",
         }}
-      ></div>
+      >
+        <Image
+          src={"/media/navbar-btn.png"}
+          alt="navbar buttons"
+          width={349}
+          height={60}
+        />
+      </div>
       <main className="col-start-2 col-end-3 pt-20 row-start-2 row-end-3 bg-[#F0F1F2] min-w-[calc(100vw-100px)] min-h-screen flex flex-col items-center justify-start py-10 px-6">
+        <div className="bg-[#D6ECF8] flex justify-between w-full p-4">
+          <p>
+            This is a demo that emulates the admin panel of iPaper. None of the
+            functionalities shown here can be performed in the actual iPaper
+            interface.
+          </p>
+        </div>
         <div className="bg-green flex justify-between w-full">
           <div className="flex items-center">
             <Image
@@ -394,17 +405,19 @@ export default function Home() {
               Flipbooks
             </h1>
             <p className="opacity-75 text-xs font-normal  mt-[6px]">
-              1 of 1000 flipbooks
+              {flipbookAmmont} of 1000 flipbooks
             </p>
           </div>
           <div className="flex flex-row">
-            <button className="inline-block align-middle mt-1.5 mb-1.5 px-6 py-1.5 border border-[#F0F1F2] rounded-sm bg-white text-[#303940] text-center font-normal text-base leading-6 cursor-pointer select-none"
-              onClick={()=>clearData()}
+            <button
+              className="inline-block align-middle mt-1.5 mb-1.5 px-6 py-1.5 border border-[#F0F1F2] rounded-sm bg-white text-[#303940] text-center font-normal text-base leading-6 cursor-pointer select-none"
+              onClick={() => clearData()}
             >
               Clear Panel
             </button>
-            <button className="inline-block align-middle mt-1.5 mb-1.5 ml-2 px-6 py-1.5 border border-[#091722] rounded-sm bg-[#091722] text-white text-center font-normal text-base leading-6 cursor-pointer select-none transition-all duration-100 ease-in-out"
-            onClick={()=>setShowUrl(!showUrl)}
+            <button
+              className="inline-block align-middle mt-1.5 mb-1.5 ml-2 px-6 py-1.5 border border-[#091722] rounded-sm bg-[#091722] text-white text-center font-normal text-base leading-6 cursor-pointer select-none transition-all duration-100 ease-in-out"
+              onClick={() => setShowUrl(!showUrl)}
             >
               {showUrl ? "Hide URLs" : "Show URLs"}
             </button>
@@ -418,10 +431,11 @@ export default function Home() {
           }}
         >
           {data.map((obj, index) => (
+            
             <div
               key={index}
-              className={`w-full ${
-                obj.active && "bg-[#D6ECF8]"
+              className={`w-full relative  ${checkedOpen(index, obj.level)} ${
+                index === activeObj && "bg-[#D6ECF8]"
               } hover:bg-[#D6ECF8] flex justify-end items-end py-2 px-5 group`}
             >
               <div
@@ -429,36 +443,53 @@ export default function Home() {
                 style={{ marginLeft: `${obj.level * 24}px` }}
               >
                 {obj.type === "folder" && (
-                  <>
-                    <Image
-                      alt="arrow icon"
-                      src={"/media/arrow.svg"}
-                      width={20}
-                      height={20}
-                      style={{
-                        filter:
-                          "invert(48%) sepia(9%) saturate(238%) hue-rotate(164deg) brightness(95%) contrast(84%)",
-                      }}
-                    />
-                    <Image
-                      alt="Folder icon"
-                      src={"/media/folder.svg"}
-                      className="mr-1"
-                      width={25}
-                      height={25}
-                      style={{
-                        filter:
-                          "invert(19%) sepia(3%) saturate(2638%) hue-rotate(164deg) brightness(103%) contrast(92%)",
-                      }}
-                    />
-                  </>
+                  <React.Fragment key={`fragment-${Math.random()}`}>
+                    <button
+                      className="flex border-none bg-none items-center"
+                      onClick={() => handleToggleOpen(index)}
+                    >
+                      <div className="w-5 h-5 relative ">
+                        <Image
+                          alt="arrow icon"
+                          src={"/media/arrow.svg"}
+                          width={20}
+                          height={20}
+                          className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 
+                            ${
+                              data[index + 1] &&
+                              data[index + 1].level === obj.level + 1
+                                ? "opacity-100"
+                                : "opacity-0"
+                            }
+                            ${obj.open ? "rotate-0" : "-rotate-90"}
+                          `}
+                          style={{
+                            filter:
+                              "invert(48%) sepia(9%) saturate(238%) hue-rotate(164deg) brightness(95%) contrast(84%)",
+                          }}
+                        />
+                      </div>
+
+                      <Image
+                        alt="Folder icon"
+                        src={"/media/folder.svg"}
+                        className="mr-1"
+                        width={25}
+                        height={25}
+                        style={{
+                          filter:
+                            "invert(19%) sepia(3%) saturate(2638%) hue-rotate(164deg) brightness(103%) contrast(92%)",
+                        }}
+                      />
+                    </button>
+                  </React.Fragment>
                 )}
                 {obj.type === "flipbook" && (
-                  <>
+                  <React.Fragment key={`fragment-${Math.random()}`}>
                     <Image
                       alt="flipbook icon"
                       src={"/media/flipbook.svg"}
-                      className="ml-4 mr-1"
+                      className="ml-[22px] mr-1"
                       width={25}
                       height={25}
                       style={{
@@ -466,7 +497,7 @@ export default function Home() {
                           "invert(19%) sepia(3%) saturate(2638%) hue-rotate(164deg) brightness(103%) contrast(92%)",
                       }}
                     />
-                  </>
+                  </React.Fragment>
                 )}
                 <input
                   type="text"
@@ -479,35 +510,33 @@ export default function Home() {
                   onChange={(e) =>
                     handleInputChange(index, "name", e.target.value)
                   }
-                  onFocus={() => handleFocus(index)}
-                  onBlur={() => handleBlur(index)}
                   style={{ width: getInputWidth(obj.name) }}
                 />
                 <div className={`${showUrl ? "flex" : "hidden"}`}>
                   {obj.type === "account" ? (
                     <p className="text-blue-600 text-xs">
                       {obj.useBD ? (
-                        <>
+                        <React.Fragment key={`fragment-${Math.random()}`}>
                           {`https://${sanitizeUrl(obj.brandedDomain)}`}
                           {!obj.useBDRoot && (
                             <span className="text-orange-600">{`/${sanitizeUrl(
                               obj.name
                             )}`}</span>
                           )}
-                        </>
+                        </React.Fragment>
                       ) : (
-                        <>
+                        <React.Fragment key={`fragment-${Math.random()}`}>
                           {"https://viewer.ipaper.io/"}
                           <span className="text-orange-600">
                             {sanitizeUrl(obj.name)}
                           </span>
-                        </>
+                        </React.Fragment>
                       )}
                     </p>
                   ) : (
                     <p className="text-blue-600 text-xs">
                       {obj.useBD ? (
-                        <>
+                        <React.Fragment key={`fragment-${Math.random()}`}>
                           {`https://${sanitizeUrl(obj.brandedDomain)}`}
                           {!obj.useBDRoot && (
                             <span
@@ -518,9 +547,9 @@ export default function Home() {
                               }`}
                             >{`/${sanitizeUrl(obj.name)}`}</span>
                           )}
-                        </>
+                        </React.Fragment>
                       ) : (
-                        <>
+                        <React.Fragment key={`fragment-${Math.random()}`}>
                           {addPreviousUrls(index, obj.level)}
                           <span
                             className={`${
@@ -531,17 +560,19 @@ export default function Home() {
                           >
                             /{sanitizeUrl(obj.name)}
                           </span>
-                        </>
+                        </React.Fragment>
                       )}
                     </p>
                   )}
                 </div>
               </div>
-              <div className="flex gap-2 ml-auto">
+              <div
+                className={`${
+                  index === activeObj ? "flex" : "hidden"
+                } justify-end gap-2 ml-auto absolute right-12 min-w-[25vw] top-0 py-2 px-5 bg-[#D6ECF8] z-10`}
+              >
                 <label
-                  className={`${obj.active && obj.useBD ? "flex" : "hidden"} ${
-                    obj.useBD && "group-hover:flex"
-                  } cursor-pointer`}
+                  className={`${obj.useBD ? "flex" : "hidden"} cursor-pointer`}
                 >
                   <input
                     type="checkbox"
@@ -569,24 +600,16 @@ export default function Home() {
                 <input
                   type="text"
                   className={`${
-                    obj.active && obj.useBD ? "inline-block" : "hidden"
-                  } ${
-                    obj.useBD && "group-hover:inline-block"
+                    obj.useBD ? "inline-block" : "hidden"
                   } min-w-48 bg-transparent border-2 border-black  font-bold text-sm`}
                   value={obj.brandedDomain}
                   placeholder="Add Branded domain URL"
                   onChange={(e) =>
                     handleInputChange(index, "brandedDomain", e.target.value)
                   }
-                  onFocus={() => handleFocus(index)}
-                  onBlur={() => handleBlur(index)}
                   style={{ width: getInputWidth(obj.brandedDomain) }}
                 />
-                <label
-                  className={`${
-                    obj.active ? "flex" : "hidden"
-                  } group-hover:flex cursor-pointer`}
-                >
+                <label className={`flex cursor-pointer`}>
                   <input
                     type="checkbox"
                     checked={obj.useBD}
@@ -611,11 +634,9 @@ export default function Home() {
                   />
                 </label>
                 {obj.type !== "flipbook" && (
-                  <>
+                  <React.Fragment key={`fragment-${Math.random()}`}>
                     <button
-                      className={`border-none bg-transparent justify-end items-center p-0 m-0 ${
-                        obj.active ? "flex" : "hidden"
-                      } group-hover:flex`}
+                      className={`border-none bg-transparent justify-end items-center p-0 m-0 flex`}
                       onClick={() => createFolder(index, obj.level)}
                     >
                       <Image
@@ -630,9 +651,7 @@ export default function Home() {
                       />
                     </button>
                     <button
-                      className={`border-none bg-transparent justify-end items-center p-0 m-0 ${
-                        obj.active ? "flex" : "hidden"
-                      } group-hover:flex`}
+                      className={`border-none bg-transparent justify-end items-center p-0 m-0 flex`}
                       onClick={() => createFlipbook(index, obj.level)}
                     >
                       <Image
@@ -646,13 +665,11 @@ export default function Home() {
                         }}
                       />
                     </button>
-                  </>
+                  </React.Fragment>
                 )}
                 {obj.type !== "account" && (
                   <button
-                    className={`border-none bg-transparent justify-end items-center p-0 m-0 ${
-                      obj.active ? "flex" : "hidden"
-                    } group-hover:flex`}
+                    className={`border-none bg-transparent justify-end items-center p-0 m-0 flex`}
                     onClick={() => {
                       deleteElement(index, obj.level);
                     }}
@@ -669,8 +686,13 @@ export default function Home() {
                     />
                   </button>
                 )}
-                <p className="font-extrabold ml-4">...</p>
               </div>
+              <button
+                className="ml-auto font-extrabold border-none bg-transparent"
+                onClick={() => toggleActiveElement(index)}
+              >
+                ...
+              </button>
             </div>
           ))}
         </div>
