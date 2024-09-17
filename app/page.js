@@ -76,6 +76,7 @@ export default function Home() {
     // Update the state
     setData(updatedData);
   };
+  useEffect(()=>{console.log(data)},[data])
 
   const createFolder = (index, level) => {
     // Create a new folder object
@@ -347,6 +348,7 @@ export default function Home() {
         useBD: false,
         useBDRoot: false,
         active: false,
+        open: true,
       },
     ]);
   };
